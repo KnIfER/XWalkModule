@@ -1,9 +1,12 @@
 package org.xwalk.core;
 
 import android.content.Context;
+import android.webkit.DownloadListener;
+
 import java.util.ArrayList;
 
-public abstract class XWalkDownloadListener {
+public class XWalkDownloadListener {
+	private final DownloadListener a;
    private ArrayList<Object> constructorTypes = new ArrayList();
    private ArrayList<Object> constructorParams;
    private ReflectMethod postWrapperMethod;
@@ -14,16 +17,19 @@ public abstract class XWalkDownloadListener {
       return this.bridge;
    }
 
-   public XWalkDownloadListener(Context context) {
-      this.constructorTypes.add(Context.class);
+   public XWalkDownloadListener(Context context, DownloadListener a) {
+	   this.a = a;
+	   this.constructorTypes.add(Context.class);
       this.constructorParams = new ArrayList();
       this.constructorParams.add(context);
       this.reflectionInit();
    }
-
-   public abstract void onDownloadStart(String var1, String var2, String var3, String var4, long var5);
-
-   void reflectionInit() {
+	
+	public void onDownloadStart(String var1, String var2, String var3, String var4, long var5) {
+		a.onDownloadStart(var1, var2, var3, var4, var5);
+	}
+	
+	void reflectionInit() {
       XWalkCoreWrapper.initEmbeddedMode();
       this.coreWrapper = XWalkCoreWrapper.getInstance();
       if (this.coreWrapper == null) {

@@ -17,7 +17,12 @@ import android.view.ViewGroup.LayoutParams;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.webkit.ValueCallback;
+import android.webkit.WebBackForwardList;
+import android.webkit.WebHistoryItem;
 import android.widget.FrameLayout;
+
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.Map;
 import org.xwalk.core.extension.XWalkExternalExtensionManagerImpl;
@@ -27,7 +32,8 @@ public class XWalkView extends FrameLayout {
    public static final int RELOAD_IGNORE_CACHE = 1;
    public static final String SURFACE_VIEW = "SurfaceView";
    public static final String TEXTURE_VIEW = "TextureView";
-   private ArrayList<Object> constructorTypes;
+	public XWalkWebResourceRequest wrr;
+	private ArrayList<Object> constructorTypes;
    private ArrayList<Object> constructorParams;
    private ReflectMethod postWrapperMethod;
    private String mAnimatable;
@@ -383,7 +389,80 @@ public class XWalkView extends FrameLayout {
          }
       }
    }
-
+	
+	public WebBackForwardList copyBackForwardList() {
+		XWalkNavigationHistory inner = getNavigationHistory();
+		return inner==null?null:new BackForwardList(inner);
+	}
+	
+	public static class HistoryItem extends android.webkit.WebHistoryItem{
+		final XWalkNavigationItem a;
+		
+		public HistoryItem(XWalkNavigationItem a) {
+			this.a = a;
+		}
+		
+		@Override
+		public String getUrl() {
+			return a.getUrl();
+		}
+		
+		@Override
+		public String getOriginalUrl() {
+			return a.getOriginalUrl();
+		}
+		
+		@Override
+		public String getTitle() {
+			return a.getTitle();
+		}
+		
+		@Nullable
+		@Override
+		public Bitmap getFavicon() {
+			return null;
+		}
+		
+		@Override
+		protected WebHistoryItem clone() {
+			return new HistoryItem(a);
+		}
+	}
+	
+	public static class BackForwardList extends android.webkit.WebBackForwardList{
+		final XWalkNavigationHistory a;
+		
+		BackForwardList(XWalkNavigationHistory a) {
+			this.a = a;
+		}
+		
+		@Nullable
+		@Override
+		public WebHistoryItem getCurrentItem() {
+			return new HistoryItem(a.getCurrentItem());
+		}
+		
+		@Override
+		public int getCurrentIndex() {
+			return a.getCurrentIndex();
+		}
+		
+		@Override
+		public WebHistoryItem getItemAtIndex(int index) {
+			return new HistoryItem(a.getItemAt(index));
+		}
+		
+		@Override
+		public int getSize() {
+			return a.size();
+		}
+		
+		@Override
+		protected WebBackForwardList clone() {
+			return new BackForwardList(a);
+		}
+	}
+	
    public void addJavascriptInterface(Object object, String name) {
       try {
          this.addJavascriptInterfaceObjectStringMethod.invoke(object, name);
@@ -585,30 +664,35 @@ public class XWalkView extends FrameLayout {
       }
    }
 
-   public boolean saveState(Bundle outState) {
+   public WebBackForwardList saveState(Bundle outState) {
       try {
-         return (Boolean)this.saveStateBundleMethod.invoke(outState);
+		  if((Boolean)this.saveStateBundleMethod.invoke(outState)) {
+			  return copyBackForwardList();
+		  }
       } catch (UnsupportedOperationException var3) {
          if (this.coreWrapper == null) {
             throw new RuntimeException("Crosswalk's APIs are not ready yet");
          } else {
             XWalkCoreWrapper.handleRuntimeError(var3);
-            return false;
+            
          }
       }
+	   return null;
    }
 
-   public boolean restoreState(Bundle inState) {
+   public WebBackForwardList restoreState(Bundle inState) {
       try {
-         return (Boolean)this.restoreStateBundleMethod.invoke(inState);
+         if((Boolean)this.restoreStateBundleMethod.invoke(inState)) {
+         	return copyBackForwardList();
+		 }
       } catch (UnsupportedOperationException var3) {
          if (this.coreWrapper == null) {
             throw new RuntimeException("Crosswalk's APIs are not ready yet");
          } else {
             XWalkCoreWrapper.handleRuntimeError(var3);
-            return false;
          }
       }
+	   return null;
    }
 
    public String getAPIVersion() {
@@ -746,9 +830,9 @@ public class XWalkView extends FrameLayout {
 
    }
 
-   public XWalkSettings getSettings() {
+   public android.webkit.WebSettings getSettings() {
       try {
-         return (XWalkSettings)this.coreWrapper.getWrapperObject(this.getSettingsMethod.invoke());
+         return new WebSettings((XWalkSettings)this.coreWrapper.getWrapperObject(this.getSettingsMethod.invoke()));
       } catch (UnsupportedOperationException var2) {
          if (this.coreWrapper == null) {
             throw new RuntimeException("Crosswalk's APIs are not ready yet");

@@ -26,6 +26,7 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.annotation:annotation:1.1.0'
     compile fileTree(include: ['*.aar'], dir: 'libs')
    // compile(name: 'crosswalk-shared-23.53.589.4', ext: 'aar')
 }

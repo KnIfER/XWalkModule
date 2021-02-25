@@ -1,5 +1,7 @@
 package org.xwalk.core;
 
-public interface CustomViewCallback {
+import android.webkit.WebChromeClient;
+
+public interface CustomViewCallback extends WebChromeClient.CustomViewCallback {
    void onCustomViewHidden();
 }

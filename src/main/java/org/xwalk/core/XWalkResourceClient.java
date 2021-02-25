@@ -2,10 +2,17 @@ package org.xwalk.core;
 
 import android.net.http.SslError;
 import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceResponse;
+import android.webkit.WebViewClient;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Map;
+
+import static org.xwalk.core.Utils.Log;
+import static org.xwalk.core.Utils.getLockedView;
+import static org.xwalk.core.Utils.unlock;
 
 public class XWalkResourceClient {
    public static final int ERROR_OK = 0;
@@ -28,6 +35,9 @@ public class XWalkResourceClient {
    private ArrayList<Object> constructorParams;
    private ReflectMethod postWrapperMethod;
    private XWalkCoreWrapper coreWrapper;
+   private WebViewClient a;
+	private WebChromeClient b;
+   private final XWalkView webView;
    private Object bridge;
    private ReflectMethod onDocumentLoadedInFrameXWalkViewInternallongMethod = new ReflectMethod((Class)null, "onDocumentLoadedInFrame", new Class[0]);
    private ReflectMethod onLoadStartedXWalkViewInternalStringMethod = new ReflectMethod((Class)null, "onLoadStarted", new Class[0]);
@@ -49,14 +59,21 @@ public class XWalkResourceClient {
       return this.bridge;
    }
 
-   public XWalkResourceClient(XWalkView view) {
-      this.constructorTypes.add("XWalkViewBridge");
-      this.constructorParams = new ArrayList();
-      this.constructorParams.add(view);
-      this.reflectionInit();
+   public XWalkResourceClient(XWalkView view, WebViewClient a, WebChromeClient b) {
+	   this.webView = view;
+	   this.constructorTypes.add("XWalkViewBridge");
+	   this.constructorParams = new ArrayList();
+	   this.constructorParams.add(view);
+	   syncAB(a, b);
+	   this.reflectionInit();
    }
-
-   public void onDocumentLoadedInFrame(XWalkView view, long frameId) {
+	
+	public void syncAB(WebViewClient a, WebChromeClient b) {
+		if(a!=null)this.a = a;
+		if(b!=null)this.b = b;
+	}
+	
+	public void onDocumentLoadedInFrame(XWalkView view, long frameId) {
       try {
          this.onDocumentLoadedInFrameXWalkViewInternallongMethod.invoke(view.getBridge(), frameId);
       } catch (UnsupportedOperationException var5) {
@@ -70,19 +87,22 @@ public class XWalkResourceClient {
    }
 
    public void onLoadStarted(XWalkView view, String url) {
-      try {
-         this.onLoadStartedXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var4);
-      }
-
+//      try {
+//         this.onLoadStartedXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var4);
+//      }
+	   if(a!=null) {
+		   a.onLoadResource(getLockedView(view, true), url);
+		   unlock();
+	   }
    }
-
-   public void onLoadFinished(XWalkView view, String url) {
+	
+	public void onLoadFinished(XWalkView view, String url) {
       try {
          this.onLoadFinishedXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
       } catch (UnsupportedOperationException var4) {
@@ -96,46 +116,76 @@ public class XWalkResourceClient {
    }
 
    public void onProgressChanged(XWalkView view, int progressInPercent) {
-      try {
-         this.onProgressChangedXWalkViewInternalintMethod.invoke(view.getBridge(), progressInPercent);
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var4);
-      }
-
+//      try {
+//         this.onProgressChangedXWalkViewInternalintMethod.invoke(view.getBridge(), progressInPercent);
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var4);
+//      }
+	   if(b!=null) {
+		   b.onProgressChanged(getLockedView(view, true), progressInPercent);
+		   unlock();
+	   }
    }
 
    /** @deprecated */
    public WebResourceResponse shouldInterceptLoadRequest(XWalkView view, String url) {
-      try {
-         return (WebResourceResponse)this.shouldInterceptLoadRequestXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         } else {
-            XWalkCoreWrapper.handleRuntimeError(var4);
-            return null;
-         }
-      }
+//      try {
+//         return (WebResourceResponse)this.shouldInterceptLoadRequestXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         } else {
+//            XWalkCoreWrapper.handleRuntimeError(var4);
+//            return null;
+//         }
+//      }
+	   
+	   if(a!=null) {
+		   android.webkit.WebView wv = getLockedView(view, false);
+		   this.webView.wrr = null;
+		   WebResourceResponse ret = null;
+		   try {
+			   ret = a.shouldInterceptRequest(wv, url);
+		   } catch (Exception e) {
+			   Log(e);
+		   }
+		   unlock();
+		   return ret;
+	   }
+	   return null;
    }
 
    public XWalkWebResourceResponse shouldInterceptLoadRequest(XWalkView view, XWalkWebResourceRequest request) {
-      try {
-         return (XWalkWebResourceResponse)this.coreWrapper.getWrapperObject(this.shouldInterceptLoadRequestXWalkViewInternalXWalkWebResourceRequestInternalMethod.invoke(view.getBridge(), ((XWalkWebResourceRequestHandler)request).getBridge()));
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         } else {
-            XWalkCoreWrapper.handleRuntimeError(var4);
-            return null;
-         }
-      }
+//      try {
+//         return (XWalkWebResourceResponse)this.coreWrapper.getWrapperObject(this.shouldInterceptLoadRequestXWalkViewInternalXWalkWebResourceRequestInternalMethod.invoke(view.getBridge(), ((XWalkWebResourceRequestHandler)request).getBridge()));
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         } else {
+//            XWalkCoreWrapper.handleRuntimeError(var4);
+//            return null;
+//         }
+//      }
+	   if(a==null) {
+	   	return null;
+	   }
+	   android.webkit.WebView wv = getLockedView(view, false);
+	   this.webView.wrr = request;
+	   XWalkWebResourceResponse ret = null;
+	   try {
+		   ret = createXWalkWebResourceResponse(a.shouldInterceptRequest(wv, (String)null));
+	   } catch (Exception e) {
+		   Log(e);
+	   }
+	   unlock();
+	   return ret;
    }
-
-   public void onReceivedLoadError(XWalkView view, int errorCode, String description, String failingUrl) {
+	
+	public void onReceivedLoadError(XWalkView view, int errorCode, String description, String failingUrl) {
       try {
          this.onReceivedLoadErrorXWalkViewInternalintStringStringMethod.invoke(view.getBridge(), errorCode, description, failingUrl);
       } catch (UnsupportedOperationException var6) {
@@ -149,16 +199,21 @@ public class XWalkResourceClient {
    }
 
    public boolean shouldOverrideUrlLoading(XWalkView view, String url) {
-      try {
-         return (Boolean)this.shouldOverrideUrlLoadingXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         } else {
-            XWalkCoreWrapper.handleRuntimeError(var4);
-            return false;
-         }
-      }
+//      try {
+//         return (Boolean)this.shouldOverrideUrlLoadingXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         } else {
+//            XWalkCoreWrapper.handleRuntimeError(var4);
+//            return false;
+//         }
+//      }
+	
+	   if(a!=null) {
+		   return a.shouldOverrideUrlLoading(getLockedView(view, true), url);
+	   }
+	   return false;
    }
 
    public void onReceivedSslError(XWalkView view, ValueCallback<Boolean> callback, SslError error) {
@@ -201,16 +256,18 @@ public class XWalkResourceClient {
    }
 
    public void doUpdateVisitedHistory(XWalkView view, String url, boolean isReload) {
-      try {
-         this.doUpdateVisitedHistoryXWalkViewInternalStringbooleanMethod.invoke(view.getBridge(), url, isReload);
-      } catch (UnsupportedOperationException var5) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var5);
-      }
-
+//      try {
+//         this.doUpdateVisitedHistoryXWalkViewInternalStringbooleanMethod.invoke(view.getBridge(), url, isReload);
+//      } catch (UnsupportedOperationException var5) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var5);
+//      }
+	   if(a!=null) {
+	   		a.doUpdateVisitedHistory(getLockedView(view, true), url, isReload);
+	   }
    }
 
    public void onReceivedHttpAuthRequest(XWalkView view, XWalkHttpAuthHandler handler, String host, String realm) {
@@ -251,7 +308,15 @@ public class XWalkResourceClient {
          }
       }
    }
-
+	
+	
+	private XWalkWebResourceResponse createXWalkWebResourceResponse(WebResourceResponse resourceResponse) {
+		if(resourceResponse==null) {
+			return null;
+		}
+   		return createXWalkWebResourceResponse(resourceResponse.getMimeType(), resourceResponse.getEncoding(), resourceResponse.getData());
+	}
+	
    void reflectionInit() {
       XWalkCoreWrapper.initEmbeddedMode();
       this.coreWrapper = XWalkCoreWrapper.getInstance();

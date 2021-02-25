@@ -6,9 +6,20 @@ import android.os.Message;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebViewClient;
+
 import java.util.ArrayList;
 
+import static org.xwalk.core.Utils.Log;
+import static org.xwalk.core.Utils.getLockedView;
+import static org.xwalk.core.Utils.unlock;
+
 public class XWalkUIClient {
+	private WebViewClient a;
+	private WebChromeClient b;
+	private final XWalkView webView;
    private ArrayList<Object> constructorTypes = new ArrayList();
    private ArrayList<Object> constructorParams;
    private ReflectMethod postWrapperMethod;
@@ -60,13 +71,20 @@ public class XWalkUIClient {
       return this.bridge;
    }
 
-   public XWalkUIClient(XWalkView view) {
-      this.constructorTypes.add("XWalkViewBridge");
-      this.constructorParams = new ArrayList();
-      this.constructorParams.add(view);
-      this.reflectionInit();
+   public XWalkUIClient(XWalkView view, WebViewClient a, WebChromeClient b) {
+	   this.webView = view;
+	   this.constructorTypes.add("XWalkViewBridge");
+	   this.constructorParams = new ArrayList();
+	   this.constructorParams.add(view);
+	   syncAB(a, b);
+	   this.reflectionInit();
    }
-
+	
+	public void syncAB(WebViewClient a, WebChromeClient b) {
+		if(a!=null)this.a = a;
+		if(b!=null)this.b = b;
+	}
+	
    public boolean onCreateWindowRequested(XWalkView view, XWalkUIClient.InitiateBy initiator, ValueCallback<XWalkView> callback) {
       try {
          return (Boolean)this.onCreateWindowRequestedXWalkViewInternalInitiateByInternalValueCallbackMethod.invoke(view.getBridge(), this.ConvertInitiateBy(initiator), callback);
@@ -103,7 +121,10 @@ public class XWalkUIClient {
 
          XWalkCoreWrapper.handleRuntimeError(var5);
       }
-
+	   if(b!=null) {
+		   b.onReceivedIcon(getLockedView(view, true), icon);
+		   unlock();
+	   }
    }
 
    public void onRequestFocus(XWalkView view) {
@@ -181,7 +202,10 @@ public class XWalkUIClient {
 
          XWalkCoreWrapper.handleRuntimeError(var5);
       }
-
+	   if(a!=null) {
+		   a.onScaleChanged(getLockedView(view, true), oldScale, newScale);
+		   unlock();
+	   }
    }
 
    public boolean shouldOverrideKeyEvent(XWalkView view, KeyEvent event) {
@@ -233,33 +257,43 @@ public class XWalkUIClient {
 
          XWalkCoreWrapper.handleRuntimeError(var4);
       }
-
+	   if(b!=null) {
+		   b.onReceivedTitle(getLockedView(view, true), title);
+		   unlock();
+	   }
    }
 
    public void onPageLoadStarted(XWalkView view, String url) {
-      try {
-         this.onPageLoadStartedXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var4);
-      }
-
+//      try {
+//         this.onPageLoadStartedXWalkViewInternalStringMethod.invoke(view.getBridge(), url);
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var4);
+//      }
+	   if(a!=null) {
+		   a.onPageStarted(getLockedView(webView, true), url, null);
+		   unlock();
+	   }
    }
 
    public void onPageLoadStopped(XWalkView view, String url, XWalkUIClient.LoadStatus status) {
-      try {
-         this.onPageLoadStoppedXWalkViewInternalStringLoadStatusInternalMethod.invoke(view.getBridge(), url, this.ConvertLoadStatus(status));
-      } catch (UnsupportedOperationException var5) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var5);
-      }
-
+//      try {
+//         this.onPageLoadStoppedXWalkViewInternalStringLoadStatusInternalMethod.invoke(view.getBridge(), url, this.ConvertLoadStatus(status));
+//      } catch (UnsupportedOperationException var5) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var5);
+//      }
+//
+	   if(a!=null) {
+		   a.onPageFinished(getLockedView(webView, true), url);
+		   unlock();
+	   }
    }
 
    public boolean onJsAlert(XWalkView view, String url, String message, XWalkJavascriptResult result) {
@@ -302,42 +336,49 @@ public class XWalkUIClient {
    }
 
    public void onShowCustomView(View view, CustomViewCallback callback) {
-      try {
-         this.onShowCustomViewViewCustomViewCallbackInternalMethod.invoke(view, ((CustomViewCallbackHandler)callback).getBridge());
-      } catch (UnsupportedOperationException var4) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var4);
-      }
-
+//      try {
+//         this.onShowCustomViewViewCustomViewCallbackInternalMethod.invoke(view, ((CustomViewCallbackHandler)callback).getBridge());
+//      } catch (UnsupportedOperationException var4) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var4);
+//      }
+	   if(b!=null) {
+		   b.onShowCustomView(view, callback);
+	   }
    }
 
    public void onShowCustomView(View view, int requestedOrientation, CustomViewCallback callback) {
-      try {
-         this.onShowCustomViewViewintCustomViewCallbackInternalMethod.invoke(view, requestedOrientation, ((CustomViewCallbackHandler)callback).getBridge());
-      } catch (UnsupportedOperationException var5) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var5);
-      }
-
+//      try {
+//         this.onShowCustomViewViewintCustomViewCallbackInternalMethod.invoke(view, requestedOrientation, ((CustomViewCallbackHandler)callback).getBridge());
+//      } catch (UnsupportedOperationException var5) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var5);
+//      }
+		//www
+	   if(b!=null) {
+		   b.onShowCustomView(view, callback);
+	   }
    }
 
    public void onHideCustomView() {
-      try {
-         this.onHideCustomViewMethod.invoke();
-      } catch (UnsupportedOperationException var2) {
-         if (this.coreWrapper == null) {
-            throw new RuntimeException("Crosswalk's APIs are not ready yet");
-         }
-
-         XWalkCoreWrapper.handleRuntimeError(var2);
-      }
-
+//      try {
+//         this.onHideCustomViewMethod.invoke();
+//      } catch (UnsupportedOperationException var2) {
+//         if (this.coreWrapper == null) {
+//            throw new RuntimeException("Crosswalk's APIs are not ready yet");
+//         }
+//
+//         XWalkCoreWrapper.handleRuntimeError(var2);
+//      }
+	   if(b!=null) {
+		   b.onHideCustomView();
+	   }
    }
 
    void reflectionInit() {

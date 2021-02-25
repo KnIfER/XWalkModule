@@ -147,8 +147,9 @@ class XWalkCoreWrapper {
 	}
 	
 	public static void handleRuntimeError(RuntimeException e) {
-		Log.e(TAG, "This API is incompatible with the Crosswalk runtime library");
-		e.printStackTrace();
+		//Log.e(TAG, "This API is incompatible with the Crosswalk runtime library");
+		//e.printStackTrace();
+		Utils.Log(e);
 	}
 	
 	public static int attachXWalkCore() {
