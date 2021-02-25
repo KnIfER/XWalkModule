@@ -1,0 +1,31 @@
+apply plugin: 'com.android.library'
+
+android {
+	
+    defaultConfig {
+        compileSdkVersion ver_compileSdkVersion
+        targetSdkVersion ver_aimsdk
+        minSdkVersion ver_minsdk
+    }
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+    }
+    buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+}
+
+dependencies {
+    compile fileTree(include: ['*.aar'], dir: 'libs')
+   // compile(name: 'crosswalk-shared-23.53.589.4', ext: 'aar')
+}
